@@ -182,13 +182,10 @@ let recursiveMerge = (target, source) => {
   }
 }
 
-let toArray = function(nodeList) {
-  let array = []
-  for (let i = 0, len = array.length = nodeList.length; i < len; i++) {
-    array[i] = nodeList[i];
-  }
-
-  return array
+function each(items, fn, context) {
+    for(let i =0, len = items.length; i < len; i++) {
+        fn.call(items[i], context)
+    }
 }
 
 let Session = {
@@ -310,9 +307,9 @@ export class LiveSocket {
   channel(topic, params){ return this.socket.channel(topic, params || {}) }
 
   joinRootViews(){
-    toArray(document.querySelectorAll(`${PHX_VIEW_SELECTOR}:not([${PHX_PARENT_ID}])`)).forEach(rootEl => {
-      this.joinView(rootEl)
-    })
+      each(document.querySelectorAll(`${PHX_VIEW_SELECTOR}:not([${PHX_PARENT_ID}])`), function(rootEl) {
+        this.joinView(rootEl)
+      }, this);
   }
 
   joinView(el, parentView){
@@ -416,10 +413,10 @@ export class LiveSocket {
         if(targetPhxEvent && !e.target.getAttribute(bindTarget)){
           this.owner(e.target, view => callback(e, event, view, e.target, targetPhxEvent, null))
         } else {
-          toArray(document.querySelectorAll(`[${binding}][${bindTarget}=window]`)).forEach(el => {
+          each(document.querySelectorAll(`[${binding}][${bindTarget}=window]`), function(el) {
             let phxEvent = el.getAttribute(binding)
             this.owner(el, view => callback(e, event, view, el, phxEvent, "window"))
-          })
+          }, this)
         }
       })
     }
@@ -500,45 +497,45 @@ let DOM = {
   disableForm(form, prefix){
     let disableWith = `${prefix}${PHX_DISABLE_WITH}`
     form.classList.add(PHX_LOADING_CLASS)
-    toArray(form.querySelectorAll(`[${disableWith}]`)).forEach(el => {
+    each(form.querySelectorAll(`[${disableWith}]`), function(el) {
       let value = el.getAttribute(disableWith)
       el.setAttribute(`${disableWith}-restore`, el.innerText)
       el.innerText = value
-    })
-    toArray(form.querySelectorAll("button")).forEach(button => {
+    }, this)
+    each(form.querySelectorAll("button"),function(button){
       button.setAttribute(PHX_DISABLED, button.disabled)
       button.disabled = true
-    })
-    toArray(form.querySelectorAll("input")).forEach(input => {
+    }, this)
+    each(form.querySelectorAll("input"), function(input) {
       input.setAttribute(PHX_READONLY, input.readOnly)
       input.readOnly = true
-    })
+    }, this)
   },
 
   restoreDisabledForm(form, prefix){
     let disableWith = `${prefix}${PHX_DISABLE_WITH}`
     form.classList.remove(PHX_LOADING_CLASS)
-    toArray(form.querySelectorAll(`[${disableWith}]`)).forEach(el => {
+    each(form.querySelectorAll(`[${disableWith}]`), function(el) {
       let value = el.getAttribute(`${disableWith}-restore`)
       if(value){
         el.innerText = value
         el.removeAttribute(`${disableWith}-restore`)
       }
-    })
-    toarray(form.querySelectorAll("button")).forEach(button => {
+    }, this)
+    each(form.querySelectorAll("button"), function(button) {
       let prev = button.getAttribute(PHX_DISABLED)
       if(prev){
         button.disabled = prev === "true"
         button.removeAttribute(PHX_DISABLED)
       }
-    })
-    toArray(form.querySelectorAll("input")).forEach(input => {
+    }, this)
+    each(form.querySelectorAll("input"), function(input) {
       let prev = input.getAttribute(PHX_READONLY)
       if(prev){
         input.readOnly = prev === "true"
         input.removeAttribute(PHX_READONLY)
       }
-    })
+    }, this)
   },
 
   discardError(el){
@@ -716,12 +713,12 @@ export class View {
 
   joinNewChildren(){
     let selector = `${PHX_VIEW_SELECTOR}[${PHX_PARENT_ID}="${this.id}"]`
-    toArray(document.querySelectorAll(selector)).forEach(childEl => {
+      each(document.querySelectorAll(selector), function(childEl) {
       let child = this.liveSocket.getViewById(childEl.id)
       if(!child){
         this.liveSocket.joinView(childEl, this)
       }
-    })
+      }, this);
   }
 
   update(diff){
